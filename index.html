@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -492,6 +492,8 @@
         20: { price: 20, maxPrize: 200, targetMean: 40, sigma: 24, matchChance: 0.34 }
       };
 
+      const MINE_COUNT = 15;
+      const MATCH_TRIAL_COUNT = 9;
       const prizeCache = new Map();
 
       function encodeTicketForUrl(ticketData) {
@@ -678,12 +680,12 @@
         const cfg = configs[price];
         const totalPrize = drawPrize(price);
         let matchCount = 0;
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < MATCH_TRIAL_COUNT; i++) {
           if (randomFloat() < cfg.matchChance) matchCount++;
         }
         if (totalPrize > 0) matchCount = Math.max(1, matchCount);
         else matchCount = 0;
-        matchCount = Math.min(matchCount, totalPrize, 9);
+        matchCount = Math.min(matchCount, totalPrize, MATCH_TRIAL_COUNT);
         return { totalPrize, matchCount };
       }
 
@@ -691,14 +693,14 @@
         const cfg = configs[price];
         const { totalPrize, matchCount } = sampleTicketStats(price);
         const winningNumbers = uniqueNumbers(3, 1, 30);
-        const matchSlots = shuffle(Array.from({ length: 9 }, (_, index) => index)).slice(0, matchCount).sort((a, b) => a - b);
+        const matchSlots = shuffle(Array.from({ length: MINE_COUNT }, (_, index) => index)).slice(0, matchCount).sort((a, b) => a - b);
         const prizeParts = splitInteger(totalPrize, matchCount);
-        const missNumbers = uniqueNumbers(9 - matchCount, 1, 30, winningNumbers);
+        const missNumbers = uniqueNumbers(MINE_COUNT - matchCount, 1, 30, winningNumbers);
         const mineCells = [];
 
         let matchCursor = 0;
         let missCursor = 0;
-        for (let slot = 0; slot < 9; slot++) {
+        for (let slot = 0; slot < MINE_COUNT; slot++) {
           const matched = matchSlots.includes(slot);
           if (matched) {
             const countedPrize = prizeParts[matchCursor++];
@@ -828,16 +830,12 @@
       function applySharedMode() {
         if (!sharedMode) return;
         els.topbar.hidden = true;
-        els.topbar.style.display = "none";
         els.denoms.forEach((button) => {
           button.disabled = true;
           button.hidden = true;
-          button.style.display = "none";
         });
         els.controls.hidden = true;
-        els.controls.style.display = "none";
         els.shareStatus.hidden = true;
-        els.shareStatus.style.display = "none";
       }
 
       function renderTicket() {
