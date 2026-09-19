@@ -340,12 +340,12 @@
       border-radius: 8px;
     }
 
-    #qrCanvas {
+    #qrCode {
       display: block;
       width: 256px;
       height: 256px;
       max-width: 100%;
-      image-rendering: pixelated;
+      line-height: 0;
     }
 
     dialog {
@@ -469,7 +469,7 @@
     <div class="dialog-body">
       <h2>扫一扫刮奖</h2>
       <div class="qr-frame">
-        <canvas id="qrCanvas" width="256" height="256"></canvas>
+        <div id="qrCode" aria-label="刮刮乐分享二维码"></div>
       </div>
       <p id="qrHint">请让对方用微信扫一扫这个二维码。</p>
       <div class="dialog-actions">
@@ -479,7 +479,7 @@
     </div>
   </dialog>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script src="qrcode.min.js"></script>
   <script>
     (() => {
       const configs = {
@@ -544,7 +544,7 @@
         closeDialog: document.getElementById("closeDialogBtn"),
         dialogNew: document.getElementById("dialogNewBtn"),
         qrDialog: document.getElementById("qrDialog"),
-        qrCanvas: document.getElementById("qrCanvas"),
+        qrCode: document.getElementById("qrCode"),
         qrHint: document.getElementById("qrHint"),
         copyQrLink: document.getElementById("copyQrLinkBtn"),
         closeQrDialog: document.getElementById("closeQrDialogBtn")
@@ -776,20 +776,20 @@
       async function showQrCode() {
         const urlText = getCurrentShareUrl();
         if (!urlText) return;
-        if (!window.QRCode || typeof window.QRCode.toCanvas !== "function") {
+        if (typeof window.QRCode !== "function") {
           showShareStatus("二维码组件还在加载，请稍后再试。", true);
           return;
         }
 
         try {
-          await window.QRCode.toCanvas(els.qrCanvas, urlText, {
+          els.qrCode.innerHTML = "";
+          new window.QRCode(els.qrCode, {
+            text: urlText,
             width: 256,
-            margin: 2,
-            errorCorrectionLevel: "M",
-            color: {
-              dark: "#1f2428",
-              light: "#ffffff"
-            }
+            height: 256,
+            colorDark: "#1f2428",
+            colorLight: "#ffffff",
+            correctLevel: window.QRCode.CorrectLevel.M
           });
           els.qrHint.textContent = "请让对方用微信扫一扫这个二维码。";
           if (!els.qrDialog.open) els.qrDialog.showModal();
