@@ -328,6 +328,26 @@
       overflow-wrap: anywhere;
     }
 
+    .qr-frame {
+      width: 280px;
+      min-height: 280px;
+      margin: 4px auto 14px;
+      padding: 10px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    #qrCanvas {
+      display: block;
+      width: 256px;
+      height: 256px;
+      max-width: 100%;
+      image-rendering: pixelated;
+    }
+
     dialog {
       width: min(470px, calc(100vw - 28px));
       border: 0;
@@ -427,6 +447,7 @@
         <button class="btn primary" id="newTicketBtn">新刮一张</button>
         <button class="btn green" id="revealBtn">直接查看</button>
         <button class="btn light" id="shareBtn">复制分享链接</button>
+        <button class="btn light" id="qrBtn">生成二维码</button>
       </nav>
       <p class="share-status" id="shareStatus" hidden role="status" aria-live="polite"></p>
     </section>
@@ -444,6 +465,21 @@
     </div>
   </dialog>
 
+  <dialog id="qrDialog">
+    <div class="dialog-body">
+      <h2>扫一扫刮奖</h2>
+      <div class="qr-frame">
+        <canvas id="qrCanvas" width="256" height="256"></canvas>
+      </div>
+      <p id="qrHint">请让对方用微信扫一扫这个二维码。</p>
+      <div class="dialog-actions">
+        <button class="btn light" id="copyQrLinkBtn">复制链接</button>
+        <button class="btn primary" id="closeQrDialogBtn">关闭</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   <script>
     (() => {
       const configs = {
@@ -499,13 +535,19 @@
         newTicket: document.getElementById("newTicketBtn"),
         reveal: document.getElementById("revealBtn"),
         share: document.getElementById("shareBtn"),
+        qr: document.getElementById("qrBtn"),
         controls: document.querySelector(".controls"),
         shareStatus: document.getElementById("shareStatus"),
         dialog: document.getElementById("resultDialog"),
         dialogTitle: document.getElementById("dialogTitle"),
         dialogText: document.getElementById("dialogText"),
         closeDialog: document.getElementById("closeDialogBtn"),
-        dialogNew: document.getElementById("dialogNewBtn")
+        dialogNew: document.getElementById("dialogNewBtn"),
+        qrDialog: document.getElementById("qrDialog"),
+        qrCanvas: document.getElementById("qrCanvas"),
+        qrHint: document.getElementById("qrHint"),
+        copyQrLink: document.getElementById("copyQrLinkBtn"),
+        closeQrDialog: document.getElementById("closeQrDialogBtn")
       };
 
       const ctx = els.canvas.getContext("2d", { willReadFrequently: true });
@@ -692,16 +734,21 @@
         resetScratchLayer();
       }
 
-      async function shareCurrentTicket() {
-        if (!ticket || sharedMode) return;
+      function getCurrentShareUrl() {
+        if (!ticket || sharedMode) return null;
         if (!/^https?:$/.test(window.location.protocol) || /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)) {
           showShareStatus("当前页面还是电脑本地文件，暂时不能生成微信可访问的链接。需要先把页面放到一个公网网址上。", true);
-          return;
+          return null;
         }
 
         const shareUrl = new URL(window.location.href);
         shareUrl.hash = "ticket=" + encodeTicketForUrl({ ...ticket, revealed: false });
-        const urlText = shareUrl.toString();
+        return shareUrl.toString();
+      }
+
+      async function shareCurrentTicket() {
+        const urlText = getCurrentShareUrl();
+        if (!urlText) return;
 
         if (navigator.share) {
           try {
@@ -723,6 +770,42 @@
           return;
         }
 
+        window.prompt("请复制下面的分享链接，再粘贴到微信发送：", urlText);
+      }
+
+      async function showQrCode() {
+        const urlText = getCurrentShareUrl();
+        if (!urlText) return;
+        if (!window.QRCode || typeof window.QRCode.toCanvas !== "function") {
+          showShareStatus("二维码组件还在加载，请稍后再试。", true);
+          return;
+        }
+
+        try {
+          await window.QRCode.toCanvas(els.qrCanvas, urlText, {
+            width: 256,
+            margin: 2,
+            errorCorrectionLevel: "M",
+            color: {
+              dark: "#1f2428",
+              light: "#ffffff"
+            }
+          });
+          els.qrHint.textContent = "请让对方用微信扫一扫这个二维码。";
+          if (!els.qrDialog.open) els.qrDialog.showModal();
+        } catch (error) {
+          showShareStatus("二维码生成失败，请重新点击“新刮一张”后再试。", true);
+        }
+      }
+
+      async function copyQrLink() {
+        const urlText = getCurrentShareUrl();
+        if (!urlText) return;
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(urlText);
+          els.qrHint.textContent = "链接已复制，可以粘贴到微信发送。";
+          return;
+        }
         window.prompt("请复制下面的分享链接，再粘贴到微信发送：", urlText);
       }
 
@@ -899,7 +982,10 @@
       els.newTicket.addEventListener("click", createTicket);
       els.reveal.addEventListener("click", () => revealTicket(true));
       els.share.addEventListener("click", shareCurrentTicket);
+      els.qr.addEventListener("click", showQrCode);
       els.closeDialog.addEventListener("click", () => els.dialog.close());
+      els.closeQrDialog.addEventListener("click", () => els.qrDialog.close());
+      els.copyQrLink.addEventListener("click", copyQrLink);
       els.dialogNew.addEventListener("click", () => {
         els.dialog.close();
         createTicket();
