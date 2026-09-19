@@ -749,8 +749,8 @@
 
         const shareUrl = new URL(window.location.href);
         shareUrl.hash = "";
-        shareUrl.searchParams.delete("v");
         shareUrl.searchParams.set("ticket", encodeTicketForUrl({ ...ticket, revealed: false }));
+        shareUrl.searchParams.set("v", String(Date.now()));
         return shareUrl.toString();
       }
 
