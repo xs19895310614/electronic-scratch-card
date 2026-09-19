@@ -1,0 +1,935 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>组合电子刮刮乐演示版</title>
+  <style>
+    :root {
+      --ink: #1f2428;
+      --muted: #6d7580;
+      --line: #dbd2c3;
+      --paper: #fffdf7;
+      --green: #247653;
+      --red: #b82e24;
+      --gold: #c18419;
+      --shadow: 0 18px 48px rgba(51, 35, 15, .16);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(229, 180, 66, .22), transparent 28rem),
+        radial-gradient(circle at 90% 18%, rgba(61, 131, 116, .18), transparent 25rem),
+        linear-gradient(135deg, #f5efe4 0%, #eaf0ea 58%, #f5eadb 100%);
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(960px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .main {
+      min-height: calc(100vh - 36px);
+      display: grid;
+      gap: 14px;
+    }
+
+    .main {
+      min-height: auto;
+      grid-template-rows: auto auto auto;
+    }
+
+    .topbar,
+    .ticket-wrap {
+      background: rgba(255, 253, 247, .9);
+      border: 1px solid rgba(111, 88, 53, .16);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
+      min-height: 86px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(23px, 3vw, 34px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      display: none;
+    }
+
+    .denoms {
+      display: grid;
+      grid-template-columns: repeat(3, 74px);
+      gap: 8px;
+      padding: 5px;
+      background: #f4ead8;
+      border: 1px solid #e0d3bf;
+      border-radius: 8px;
+    }
+
+    .denom {
+      min-height: 44px;
+      border-radius: 7px;
+      background: transparent;
+      color: #665444;
+      font-weight: 900;
+      transition: background .15s ease, color .15s ease, transform .15s ease;
+    }
+
+    .denom.active {
+      color: #fff;
+      background: linear-gradient(135deg, #a92d24, #c9871e);
+      box-shadow: 0 8px 16px rgba(155, 61, 16, .2);
+    }
+
+    .ticket-wrap {
+      padding: clamp(12px, 3vw, 24px);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .ticket {
+      width: min(690px, 100%);
+      min-height: 460px;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .22), transparent 38%),
+        linear-gradient(135deg, #9f261e 0%, #db4931 44%, #e7a63e 100%);
+      box-shadow: 0 24px 64px rgba(94, 57, 13, .28);
+      border: 1px solid rgba(114, 38, 15, .28);
+      isolation: isolate;
+    }
+
+    .ticket::before,
+    .ticket::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border: 2px dashed rgba(255, 248, 220, .6);
+      border-radius: 7px;
+      pointer-events: none;
+    }
+
+    .ticket::after {
+      inset: 29px;
+      border-style: solid;
+      opacity: .34;
+    }
+
+    .ticket-inner {
+      position: relative;
+      z-index: 1;
+      min-height: 460px;
+      padding: clamp(20px, 4vw, 34px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 14px;
+    }
+
+    .ticket-head {
+      color: #fff9e8;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      text-shadow: 0 2px 8px rgba(62, 17, 5, .25);
+    }
+
+    .ticket-title {
+      font-size: clamp(25px, 5vw, 46px);
+      line-height: .96;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .board {
+      align-self: stretch;
+      min-height: 330px;
+      position: relative;
+      padding: 16px;
+      border-radius: 8px;
+      background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, .2) 0 9px, rgba(255, 255, 255, .08) 9px 18px),
+        rgba(255, 248, 227, .94);
+      border: 3px solid rgba(120, 60, 15, .24);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55), 0 12px 28px rgba(55, 21, 7, .19);
+      touch-action: none;
+      overflow: hidden;
+    }
+
+    .board-label {
+      margin: 0 0 8px;
+      color: #7c4b1d;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .grid {
+      display: grid;
+      gap: 9px;
+    }
+
+    .winning-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 14px;
+    }
+
+    .mine-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cell {
+      min-height: 70px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: #fff9ea;
+      border: 1px solid rgba(126, 92, 44, .2);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .36);
+      overflow: hidden;
+    }
+
+    .cell.win {
+      background: linear-gradient(135deg, #fff9de, #ffe4ad);
+      border-color: rgba(191, 123, 23, .4);
+    }
+
+    .cell.matched {
+      background: linear-gradient(135deg, #eef9ee, #dff2dc);
+      border-color: rgba(52, 130, 82, .42);
+    }
+
+    .cell.miss {
+      background: #fffdf7;
+    }
+
+    .cell-caption {
+      display: block;
+      color: #875f32;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .num {
+      display: block;
+      color: #77190f;
+      font-size: clamp(22px, 5vw, 34px);
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .prize {
+      display: block;
+      margin-top: 5px;
+      color: #214c39;
+      font-size: clamp(15px, 3vw, 22px);
+      font-weight: 950;
+      line-height: 1.05;
+    }
+
+    .cell.miss .prize {
+      color: #8b7b66;
+    }
+
+    #scratchCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .controls {
+      width: min(690px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .btn {
+      min-height: 45px;
+      padding: 0 14px;
+      border-radius: 7px;
+      color: #fff;
+      background: #263647;
+      font-weight: 850;
+      box-shadow: 0 8px 18px rgba(27, 38, 50, .18);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #a82b23, #cb831b);
+    }
+
+    .btn.green {
+      background: #247653;
+    }
+
+    .btn.light {
+      background: #fffdf8;
+      color: #22313f;
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .share-status {
+      width: min(690px, 100%);
+      margin: -2px auto 0;
+      padding: 10px 12px;
+      border: 1px solid rgba(36, 118, 83, .22);
+      border-radius: 7px;
+      background: rgba(36, 118, 83, .08);
+      color: #246044;
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    dialog {
+      width: min(470px, calc(100vw - 28px));
+      border: 0;
+      border-radius: 8px;
+      padding: 0;
+      box-shadow: 0 26px 70px rgba(0, 0, 0, .24);
+      background: var(--paper);
+    }
+
+    dialog::backdrop {
+      background: rgba(22, 20, 18, .42);
+      backdrop-filter: blur(4px);
+    }
+
+    .dialog-body {
+      padding: 20px;
+    }
+
+    .dialog-body h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .dialog-body p {
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 8px 0 16px;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        padding: 10px;
+        gap: 10px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .denoms {
+        width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .ticket,
+      .ticket-inner {
+        min-height: 520px;
+      }
+
+      .controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="main" aria-label="组合刮刮乐彩票">
+      <header class="topbar">
+        <div class="brand">
+          <h1>组合电子刮刮乐</h1>
+        </div>
+        <div class="denoms" aria-label="选择面额">
+          <button class="denom active" data-price="5">¥5</button>
+          <button class="denom" data-price="10">¥10</button>
+          <button class="denom" data-price="20">¥20</button>
+        </div>
+      </header>
+
+      <section class="ticket-wrap">
+        <article class="ticket">
+          <div class="ticket-inner">
+            <div class="ticket-head">
+              <div class="ticket-title">幸运匹配</div>
+            </div>
+
+            <section class="board" id="gameBoard" aria-label="刮奖组合区域">
+              <p class="board-label">中奖号码</p>
+              <div class="grid winning-grid" id="winningGrid"></div>
+              <p class="board-label">我的号码</p>
+              <div class="grid mine-grid" id="mineGrid"></div>
+              <canvas id="scratchCanvas"></canvas>
+            </section>
+
+          </div>
+        </article>
+      </section>
+
+      <nav class="controls" aria-label="操作按钮">
+        <button class="btn primary" id="newTicketBtn">新刮一张</button>
+        <button class="btn green" id="revealBtn">直接查看</button>
+        <button class="btn light" id="shareBtn">复制分享链接</button>
+      </nav>
+      <p class="share-status" id="shareStatus" hidden role="status" aria-live="polite"></p>
+    </section>
+
+  </main>
+
+  <dialog id="resultDialog">
+    <div class="dialog-body">
+      <h2 id="dialogTitle">刮开完成</h2>
+      <p id="dialogText"></p>
+      <div class="dialog-actions">
+        <button class="btn light" id="closeDialogBtn">知道了</button>
+        <button class="btn primary" id="dialogNewBtn">再来一张</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    (() => {
+      const configs = {
+        5: { price: 5, maxPrize: 200, targetMean: 10, sigma: 6, matchChance: 0.24 },
+        10: { price: 10, maxPrize: 200, targetMean: 20, sigma: 12, matchChance: 0.29 },
+        20: { price: 20, maxPrize: 200, targetMean: 40, sigma: 24, matchChance: 0.34 }
+      };
+
+      const prizeCache = new Map();
+
+      function encodeTicketForUrl(ticketData) {
+        const bytes = new TextEncoder().encode(JSON.stringify(ticketData));
+        let binary = "";
+        bytes.forEach((byte) => {
+          binary += String.fromCharCode(byte);
+        });
+        return btoa(binary)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      function decodeTicketFromUrl(value) {
+        const normalized = value.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((value.length + 3) % 4);
+        const binary = atob(normalized);
+        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+        return JSON.parse(new TextDecoder().decode(bytes));
+      }
+
+      function readSharedTicketFromUrl() {
+        const encoded = new URLSearchParams(window.location.hash.slice(1)).get("ticket");
+        if (!encoded) return null;
+        try {
+          const data = decodeTicketFromUrl(encoded);
+          return data && configs[data.price] ? data : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      const sharedTicketSource = readSharedTicketFromUrl();
+      const sharedTicket = sharedTicketSource && configs[sharedTicketSource.price]
+        ? JSON.parse(JSON.stringify(sharedTicketSource))
+        : null;
+      const sharedMode = Boolean(sharedTicket);
+
+      const els = {
+        denoms: document.querySelectorAll(".denom"),
+        gameBoard: document.getElementById("gameBoard"),
+        winningGrid: document.getElementById("winningGrid"),
+        mineGrid: document.getElementById("mineGrid"),
+        canvas: document.getElementById("scratchCanvas"),
+        newTicket: document.getElementById("newTicketBtn"),
+        reveal: document.getElementById("revealBtn"),
+        share: document.getElementById("shareBtn"),
+        controls: document.querySelector(".controls"),
+        shareStatus: document.getElementById("shareStatus"),
+        dialog: document.getElementById("resultDialog"),
+        dialogTitle: document.getElementById("dialogTitle"),
+        dialogText: document.getElementById("dialogText"),
+        closeDialog: document.getElementById("closeDialogBtn"),
+        dialogNew: document.getElementById("dialogNewBtn")
+      };
+
+      const ctx = els.canvas.getContext("2d", { willReadFrequently: true });
+      let selectedPrice = sharedTicket ? sharedTicket.price : 5;
+      let ticket = null;
+      let drawing = false;
+      let lastPoint = null;
+
+      function money(value) {
+        const number = Number(value);
+        return "¥" + number.toFixed(Number.isInteger(number) ? 0 : 2);
+      }
+
+      function randomFloat() {
+        if (window.crypto && crypto.getRandomValues) {
+          const values = new Uint32Array(1);
+          crypto.getRandomValues(values);
+          return values[0] / 0x100000000;
+        }
+        return Math.random();
+      }
+
+      function randomInt(maxExclusive) {
+        return Math.floor(randomFloat() * maxExclusive);
+      }
+
+      function sample(array) {
+        return array[randomInt(array.length)];
+      }
+
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = randomInt(i + 1);
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function uniqueNumbers(count, min, max, exclude = []) {
+        const excluded = new Set(exclude);
+        const values = [];
+        while (values.length < count) {
+          const value = min + randomInt(max - min + 1);
+          if (!excluded.has(value) && !values.includes(value)) values.push(value);
+        }
+        return values;
+      }
+
+      function buildPrizeRows(price) {
+        if (prizeCache.has(price)) return prizeCache.get(price);
+        const cfg = configs[price];
+        const maxPrize = cfg.maxPrize;
+        const rows = [];
+        const center = solveNormalCenter(cfg.targetMean, cfg.sigma, maxPrize);
+
+        for (let amount = 0; amount <= maxPrize; amount++) {
+          const z = (amount - center) / cfg.sigma;
+          const weight = Math.exp(-0.5 * z * z);
+          rows.push({ amount, weight });
+        }
+
+        prizeCache.set(price, rows);
+        return rows;
+      }
+
+      function solveNormalCenter(targetMean, sigma, maxPrize) {
+        let low = -maxPrize;
+        let high = maxPrize;
+        for (let i = 0; i < 72; i++) {
+          const mid = (low + high) / 2;
+          if (discreteNormalExpected(mid, sigma, maxPrize) < targetMean) low = mid;
+          else high = mid;
+        }
+        return (low + high) / 2;
+      }
+
+      function discreteNormalExpected(center, sigma, maxPrize) {
+        let totalWeight = 0;
+        let weightedSum = 0;
+        for (let amount = 0; amount <= maxPrize; amount++) {
+          const z = (amount - center) / sigma;
+          const weight = Math.exp(-0.5 * z * z);
+          totalWeight += weight;
+          weightedSum += amount * weight;
+        }
+        return weightedSum / totalWeight;
+      }
+
+      function sampleWeighted(rows) {
+        const totalWeight = rows.reduce((sum, item) => sum + item.weight, 0);
+        let roll = randomFloat() * totalWeight;
+        for (const row of rows) {
+          if (roll < row.weight) return row;
+          roll -= row.weight;
+        }
+        return rows[rows.length - 1];
+      }
+
+      function drawPrize(price) {
+        return sampleWeighted(buildPrizeRows(price)).amount;
+      }
+
+      function splitInteger(total, parts) {
+        if (parts <= 0) return [];
+        if (parts === 1) return [total];
+        const cuts = new Set();
+        while (cuts.size < parts - 1) {
+          cuts.add(1 + randomInt(total - 1));
+        }
+        const sortedCuts = Array.from(cuts).sort((a, b) => a - b);
+        const values = [];
+        let previous = 0;
+        for (const cut of sortedCuts) {
+          values.push(cut - previous);
+          previous = cut;
+        }
+        values.push(total - previous);
+        return values;
+      }
+
+      function sampleTicketStats(price) {
+        const cfg = configs[price];
+        const totalPrize = drawPrize(price);
+        let matchCount = 0;
+        for (let i = 0; i < 9; i++) {
+          if (randomFloat() < cfg.matchChance) matchCount++;
+        }
+        if (totalPrize > 0) matchCount = Math.max(1, matchCount);
+        else matchCount = 0;
+        matchCount = Math.min(matchCount, totalPrize, 9);
+        return { totalPrize, matchCount };
+      }
+
+      function createTicketData(price) {
+        const cfg = configs[price];
+        const { totalPrize, matchCount } = sampleTicketStats(price);
+        const winningNumbers = uniqueNumbers(3, 1, 30);
+        const matchSlots = shuffle(Array.from({ length: 9 }, (_, index) => index)).slice(0, matchCount).sort((a, b) => a - b);
+        const prizeParts = splitInteger(totalPrize, matchCount);
+        const missNumbers = uniqueNumbers(9 - matchCount, 1, 30, winningNumbers);
+        const mineCells = [];
+
+        let matchCursor = 0;
+        let missCursor = 0;
+        for (let slot = 0; slot < 9; slot++) {
+          const matched = matchSlots.includes(slot);
+          if (matched) {
+            const countedPrize = prizeParts[matchCursor++];
+            mineCells.push({
+              number: sample(winningNumbers),
+              prize: countedPrize,
+              displayPrize: countedPrize,
+              matched: true
+            });
+          } else {
+            mineCells.push({
+              number: missNumbers[missCursor++],
+              displayPrize: drawPrize(price),
+              prize: 0,
+              matched: false
+            });
+          }
+        }
+
+        return {
+          id: "DEMO-" + String(Date.now()).slice(-6) + "-" + String(randomInt(1000)).padStart(3, "0"),
+          price: cfg.price,
+          maxPrize: cfg.maxPrize,
+          winningNumbers,
+          mineCells: shuffle(mineCells),
+          totalPrize,
+          matchCount,
+          createdAt: new Date().toLocaleString("zh-CN"),
+          revealed: false
+        };
+      }
+
+      function createTicket() {
+        ticket = sharedMode
+          ? JSON.parse(JSON.stringify(sharedTicket))
+          : createTicketData(selectedPrice);
+        ticket.revealed = false;
+        renderTicket();
+        resetScratchLayer();
+      }
+
+      async function shareCurrentTicket() {
+        if (!ticket || sharedMode) return;
+        if (!/^https?:$/.test(window.location.protocol) || /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)) {
+          showShareStatus("当前页面还是电脑本地文件，暂时不能生成微信可访问的链接。需要先把页面放到一个公网网址上。", true);
+          return;
+        }
+
+        const shareUrl = new URL(window.location.href);
+        shareUrl.hash = "ticket=" + encodeTicketForUrl({ ...ticket, revealed: false });
+        const urlText = shareUrl.toString();
+
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: "电子刮刮乐",
+              text: "打开后可以亲自刮开这张电子刮刮乐",
+              url: urlText
+            });
+            showShareStatus("已打开分享面板，请选择微信或其他联系人发送。", false);
+            return;
+          } catch (error) {
+            if (error && error.name === "AbortError") return;
+          }
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(urlText);
+          showShareStatus("分享链接已复制。现在打开微信，粘贴到聊天窗口发送即可。", false);
+          return;
+        }
+
+        window.prompt("请复制下面的分享链接，再粘贴到微信发送：", urlText);
+      }
+
+      function showShareStatus(message, isError = false) {
+        els.shareStatus.hidden = false;
+        els.shareStatus.textContent = message;
+        els.shareStatus.style.color = isError ? "var(--red)" : "#246044";
+        els.shareStatus.style.background = isError ? "rgba(184, 46, 36, .08)" : "rgba(36, 118, 83, .08)";
+        els.shareStatus.style.borderColor = isError ? "rgba(184, 46, 36, .22)" : "rgba(36, 118, 83, .22)";
+      }
+
+      function applySharedMode() {
+        if (!sharedMode) return;
+        els.denoms.forEach((button) => {
+          const isSelected = Number(button.dataset.price) === selectedPrice;
+          button.hidden = !isSelected;
+          button.disabled = true;
+          button.classList.toggle("active", isSelected);
+        });
+        els.controls.hidden = true;
+      }
+
+      function renderTicket() {
+        if (!ticket) return;
+        els.reveal.disabled = ticket.revealed;
+
+        els.winningGrid.innerHTML = ticket.winningNumbers.map((number, index) => `
+          <div class="cell win">
+            <div>
+              <span class="cell-caption">幸运 ${index + 1}</span>
+              <span class="num">${number}</span>
+            </div>
+          </div>
+        `).join("");
+
+        els.mineGrid.innerHTML = ticket.mineCells.map((cell, index) => {
+          const caption = "号码 " + (index + 1);
+          const prizeText = money(cell.displayPrize ?? cell.prize);
+          return `
+            <div class="cell">
+              <div>
+                <span class="cell-caption">${caption}</span>
+                <span class="num">${cell.number}</span>
+                <span class="prize">${prizeText}</span>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function resizeCanvas() {
+        const rect = els.gameBoard.getBoundingClientRect();
+        const ratio = Math.max(1, window.devicePixelRatio || 1);
+        els.canvas.width = Math.round(rect.width * ratio);
+        els.canvas.height = Math.round(rect.height * ratio);
+        els.canvas.style.width = rect.width + "px";
+        els.canvas.style.height = rect.height + "px";
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        if (!ticket || !ticket.revealed) resetScratchLayer();
+      }
+
+      function resetScratchLayer() {
+        if (!ticket) return;
+        const rect = els.gameBoard.getBoundingClientRect();
+        ctx.globalCompositeOperation = "source-over";
+        const gradient = ctx.createLinearGradient(0, 0, rect.width, rect.height);
+        gradient.addColorStop(0, "#aeb5bf");
+        gradient.addColorStop(.38, "#f1f2f1");
+        gradient.addColorStop(1, "#8d97a4");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, rect.width, rect.height);
+
+        ctx.strokeStyle = "rgba(255,255,255,.24)";
+        ctx.lineWidth = 10;
+        for (let x = -rect.height; x < rect.width; x += 24) {
+          ctx.beginPath();
+          ctx.moveTo(x, rect.height);
+          ctx.lineTo(x + rect.height, 0);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "rgba(53,60,70,.82)";
+        ctx.font = "800 18px Microsoft YaHei, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("刮开组合面板", rect.width / 2, rect.height / 2);
+      }
+
+      function pointFromEvent(event) {
+        const rect = els.canvas.getBoundingClientRect();
+        return {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        };
+      }
+
+      function scratchAt(point) {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 34;
+        if (lastPoint) {
+          ctx.beginPath();
+          ctx.moveTo(lastPoint.x, lastPoint.y);
+          ctx.lineTo(point.x, point.y);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 18, 0, Math.PI * 2);
+        ctx.fill();
+        lastPoint = point;
+      }
+
+      function scratchedRatio() {
+        const image = ctx.getImageData(0, 0, els.canvas.width, els.canvas.height);
+        let clearPixels = 0;
+        for (let i = 3; i < image.data.length; i += 4) {
+          if (image.data[i] < 20) clearPixels++;
+        }
+        return clearPixels / (image.data.length / 4);
+      }
+
+      function revealTicket(showDialog = true) {
+        if (!ticket || ticket.revealed) return;
+        ticket.revealed = true;
+        renderTicket();
+        ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+
+        if (showDialog) {
+          els.dialogTitle.textContent = ticket.totalPrize > 0
+            ? "中奖 " + money(ticket.totalPrize)
+            : "本张未中奖";
+          els.dialogText.textContent = "面额 " + money(ticket.price);
+          if (!els.dialog.open) els.dialog.showModal();
+        }
+      }
+
+      function selectPrice(price) {
+        selectedPrice = price;
+        els.denoms.forEach((button) => {
+          button.classList.toggle("active", Number(button.dataset.price) === price);
+        });
+        createTicket();
+      }
+
+      els.canvas.addEventListener("pointerdown", (event) => {
+        if (ticket && ticket.revealed) return;
+        drawing = true;
+        els.canvas.setPointerCapture(event.pointerId);
+        lastPoint = null;
+        scratchAt(pointFromEvent(event));
+      });
+
+      els.canvas.addEventListener("pointermove", (event) => {
+        if (!drawing || (ticket && ticket.revealed)) return;
+        scratchAt(pointFromEvent(event));
+      });
+
+      els.canvas.addEventListener("pointerup", () => {
+        if (!drawing || (ticket && ticket.revealed)) return;
+        drawing = false;
+        lastPoint = null;
+        if (scratchedRatio() > .68) revealTicket(true);
+      });
+
+      els.canvas.addEventListener("pointercancel", () => {
+        drawing = false;
+        lastPoint = null;
+      });
+
+      els.denoms.forEach((button) => {
+        button.addEventListener("click", () => selectPrice(Number(button.dataset.price)));
+      });
+      els.newTicket.addEventListener("click", createTicket);
+      els.reveal.addEventListener("click", () => revealTicket(true));
+      els.share.addEventListener("click", shareCurrentTicket);
+      els.closeDialog.addEventListener("click", () => els.dialog.close());
+      els.dialogNew.addEventListener("click", () => {
+        els.dialog.close();
+        createTicket();
+      });
+      window.addEventListener("resize", () => {
+        resizeCanvas();
+      });
+
+      applySharedMode();
+      createTicket();
+      requestAnimationFrame(() => {
+        resizeCanvas();
+      });
+
+      window.__scratchCardTest = {
+        configs,
+        buildPrizeRows,
+        drawPrize,
+        sampleTicketStats,
+        createTicketData,
+        revealTicket: () => revealTicket(false),
+        createTicket,
+        selectPrice,
+        getState: () => ({
+          ticket,
+          selectedPrice
+        })
+      };
+    })();
+  </script>
+</body>
+</html>
+
