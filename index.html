@@ -514,7 +514,8 @@
       }
 
       function readSharedTicketFromUrl() {
-        const encoded = new URLSearchParams(window.location.hash.slice(1)).get("ticket");
+        const params = new URLSearchParams(window.location.search);
+        const encoded = params.get("ticket") || new URLSearchParams(window.location.hash.slice(1)).get("ticket");
         if (!encoded) return null;
         try {
           const data = decodeTicketFromUrl(encoded);
@@ -540,6 +541,7 @@
         reveal: document.getElementById("revealBtn"),
         share: document.getElementById("shareBtn"),
         qr: document.getElementById("qrBtn"),
+        topbar: document.querySelector(".topbar"),
         controls: document.querySelector(".controls"),
         shareStatus: document.getElementById("shareStatus"),
         dialog: document.getElementById("resultDialog"),
@@ -746,7 +748,9 @@
         }
 
         const shareUrl = new URL(window.location.href);
-        shareUrl.hash = "ticket=" + encodeTicketForUrl({ ...ticket, revealed: false });
+        shareUrl.hash = "";
+        shareUrl.searchParams.delete("v");
+        shareUrl.searchParams.set("ticket", encodeTicketForUrl({ ...ticket, revealed: false }));
         return shareUrl.toString();
       }
 
@@ -823,13 +827,13 @@
 
       function applySharedMode() {
         if (!sharedMode) return;
+        els.topbar.hidden = true;
         els.denoms.forEach((button) => {
-          const isSelected = Number(button.dataset.price) === selectedPrice;
-          button.hidden = !isSelected;
           button.disabled = true;
-          button.classList.toggle("active", isSelected);
+          button.hidden = true;
         });
         els.controls.hidden = true;
+        els.shareStatus.hidden = true;
       }
 
       function renderTicket() {
