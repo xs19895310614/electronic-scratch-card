@@ -828,12 +828,16 @@
       function applySharedMode() {
         if (!sharedMode) return;
         els.topbar.hidden = true;
+        els.topbar.style.display = "none";
         els.denoms.forEach((button) => {
           button.disabled = true;
           button.hidden = true;
+          button.style.display = "none";
         });
         els.controls.hidden = true;
+        els.controls.style.display = "none";
         els.shareStatus.hidden = true;
+        els.shareStatus.style.display = "none";
       }
 
       function renderTicket() {
