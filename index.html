@@ -123,7 +123,7 @@
 
     .ticket {
       width: min(690px, 100%);
-      min-height: 460px;
+      min-height: 500px;
       border-radius: 8px;
       position: relative;
       overflow: hidden;
@@ -154,7 +154,7 @@
     .ticket-inner {
       position: relative;
       z-index: 1;
-      min-height: 460px;
+      min-height: 500px;
       padding: clamp(20px, 4vw, 34px);
       display: grid;
       grid-template-rows: auto 1fr;
@@ -179,7 +179,7 @@
 
     .board {
       align-self: stretch;
-      min-height: 330px;
+      min-height: 380px;
       position: relative;
       padding: 16px;
       border-radius: 8px;
@@ -214,7 +214,7 @@
     }
 
     .cell {
-      min-height: 70px;
+      min-height: 82px;
       border-radius: 7px;
       display: grid;
       place-items: center;
@@ -257,11 +257,14 @@
 
     .prize {
       display: block;
-      margin-top: 5px;
+      width: min(88%, 110px);
+      margin: 8px auto 0;
+      padding-top: 7px;
       color: #214c39;
       font-size: clamp(15px, 3vw, 22px);
       font-weight: 950;
       line-height: 1.05;
+      border-top: 1px dashed rgba(126, 92, 44, .5);
     }
 
     .cell.miss .prize {
@@ -401,7 +404,7 @@
 
       .ticket,
       .ticket-inner {
-        min-height: 520px;
+        min-height: 560px;
       }
 
       .controls {
